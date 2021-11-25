@@ -1,0 +1,50 @@
+<launch>
+  <arg name="init_x_"/>
+  <arg name="init_y_"/>
+  <arg name="init_z_"/> 
+  <arg name="map_size_x_"/>
+  <arg name="map_size_y_"/>
+  <arg name="map_size_z_"/>
+  <arg name="c_num"/>
+  <arg name="p_num"/>
+  <arg name="min_dist"/>
+  <arg name="odometry_topic"/>
+  <arg name="drone_id"/>
+  
+  <node pkg="poscmd_2_odom" name="car_poscmd_2_odom" type="poscmd_2_odom" output="screen">
+        <param name="init_x" value="$(arg init_x_)"/>
+        <param name="init_y" value="$(arg init_y_)"/>
+        <param name="init_z" value="$(arg init_z_)"/>
+        <param name="car/wheelbase" value="0.6"  type="double"/>
+        <remap from="~command" to="/car_planning/pos_cmd"/>
+        <remap from="~odometry" to="$(arg odometry_topic)"/>
+  </node>
+
+  <node pkg="car_planner" name="car_vis_node" type="car_vis_node" output="screen">
+        <param name="car/car_l" value="0.6"  type="double"/>
+        <param name="car/car_w" value="0.4"  type="double"/>
+        <param name="car/car_h" value="0.3"  type="double"/>
+        <param name="car/max_steer" value="0.7"  type="double"/>
+        <param name="car/wheelbase" value="0.6"  type="double"/>
+        <param name="car/mesh" value="package://car_planner/param/car.dae"  type="string"/>
+        <param name="car/frame" value="world"  type="string"/>
+        <remap from="~odom" to="$(arg odometry_topic)"/>
+        <remap from="~odom_mesh" to="car_model"/>
+  </node>
+
+  <node pkg="local_sensing_node" type="pcl_render_node" name="pcl_render_node" output="screen">
+        <rosparam command="load" file="$(find local_sensing_node)/params/camera.yaml" />
+        <param name="sensing_horizon"  value="5.0" />
+        <param name="sensing_rate"     value="30.0"/>
+        <param name="estimation_rate"  value="30.0"/>
+
+        <param name="map/x_size"     value="$(arg map_size_x_)"/>
+        <param name="map/y_size"     value="$(arg map_size_y_)"/>
+        <param name="map/z_size"     value="$(arg map_size_z_)"/>
+
+        <remap from="~global_map" to="/global_map"/>
+        <remap from="~odometry"   to="$(arg odometry_topic)"/>
+        <remap from="~pcl_render_node/cloud"   to="/pcl_render_node/cloud"/>
+  </node>
+
+</launch>
