@@ -1,7 +1,6 @@
 #include "bspline_opt/uniform_bspline.h"
 #include "nav_msgs/Odometry.h"
 #include "traj_utils/Bspline.h"
-#include "quadrotor_msgs/PositionCommand.h"
 #include "std_msgs/Empty.h"
 #include "visualization_msgs/Marker.h"
 #include <ackermann_msgs/AckermannDrive.h>
@@ -91,99 +90,6 @@ void bsplineCallback(traj_utils::BsplineConstPtr msg)
 
   traj_duration_ = traj_[0].getTimeSum();
   receive_traj_ = true;
-}
-
-std::pair<double, double> calculate_yaw(double t_cur, Eigen::Vector3d &pos, double dvel, ros::Time &time_now, ros::Time &time_last)
-{
-  constexpr double PI = 3.1415926;
-  double YAW_DOT_MAX_PER_SEC = dvel * max_kappa;
-  // constexpr double YAW_DOT_DOT_MAX_PER_SEC = PI;
-  std::pair<double, double> yaw_yawdot(0, 0);
-  double yaw = 0;
-  double yawdot = 0;
-
-  Eigen::Vector3d dir = t_cur + time_forward_ <= traj_duration_ ? traj_[0].evaluateDeBoorT(t_cur + time_forward_) - pos : traj_[0].evaluateDeBoorT(traj_duration_) - pos;
-  double yaw_temp = dir.norm() > 0.01 ? atan2(dir(1), dir(0)) : last_yaw_;
-  double max_yaw_change = YAW_DOT_MAX_PER_SEC * (time_now - time_last).toSec();
-
-  if (yaw_temp - last_yaw_ > PI)
-  {
-    if (yaw_temp - last_yaw_ - 2 * PI < -max_yaw_change)
-    {
-      yaw = last_yaw_ - max_yaw_change;
-      if (yaw < -PI)
-        yaw += 2 * PI;
-
-      yawdot = -YAW_DOT_MAX_PER_SEC;
-    }
-    else
-    {
-      yaw = yaw_temp;
-      if (yaw - last_yaw_ > PI)
-        yawdot = -YAW_DOT_MAX_PER_SEC;
-      else
-        yawdot = (yaw_temp - last_yaw_) / (time_now - time_last).toSec();
-    }
-  }
-  else if (yaw_temp - last_yaw_ < -PI)
-  {
-    if (yaw_temp - last_yaw_ + 2 * PI > max_yaw_change)
-    {
-      yaw = last_yaw_ + max_yaw_change;
-      if (yaw > PI)
-        yaw -= 2 * PI;
-
-      yawdot = YAW_DOT_MAX_PER_SEC;
-    }
-    else
-    {
-      yaw = yaw_temp;
-      if (yaw - last_yaw_ < -PI)
-        yawdot = YAW_DOT_MAX_PER_SEC;
-      else
-        yawdot = (yaw_temp - last_yaw_) / (time_now - time_last).toSec();
-    }
-  }
-  else
-  {
-    if (yaw_temp - last_yaw_ < -max_yaw_change)
-    {
-      yaw = last_yaw_ - max_yaw_change;
-      if (yaw < -PI)
-        yaw += 2 * PI;
-
-      yawdot = -YAW_DOT_MAX_PER_SEC;
-    }
-    else if (yaw_temp - last_yaw_ > max_yaw_change)
-    {
-      yaw = last_yaw_ + max_yaw_change;
-      if (yaw > PI)
-        yaw -= 2 * PI;
-
-      yawdot = YAW_DOT_MAX_PER_SEC;
-    }
-    else
-    {
-      yaw = yaw_temp;
-      if (yaw - last_yaw_ > PI)
-        yawdot = -YAW_DOT_MAX_PER_SEC;
-      else if (yaw - last_yaw_ < -PI)
-        yawdot = YAW_DOT_MAX_PER_SEC;
-      else
-        yawdot = (yaw_temp - last_yaw_) / (time_now - time_last).toSec();
-    }
-  }
-
-  if (fabs(yaw - last_yaw_) <= max_yaw_change)
-    yaw = 0.5 * last_yaw_ + 0.5 * yaw; // nieve LPF
-  yawdot = 0.5 * last_yaw_dot_ + 0.5 * yawdot;
-  last_yaw_ = yaw;
-  last_yaw_dot_ = yawdot;
-
-  yaw_yawdot.first = yaw;
-  yaw_yawdot.second = yawdot;
-
-  return yaw_yawdot;
 }
 
 void cmdCallback(const ros::TimerEvent &e)

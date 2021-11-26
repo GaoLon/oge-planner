@@ -325,6 +325,7 @@ inline int GridMap::getOccupancy(Eigen::Vector3d pos) {
 }
 
 inline int GridMap::getInflateOccupancy(Eigen::Vector3d pos) {
+  return 0;
   if (!isInMap(pos)) return -1;
 
   Eigen::Vector3i id;

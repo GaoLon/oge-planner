@@ -1,0 +1,84 @@
+<launch>
+
+  <arg name="sensorOffsetX" default="0"/>
+  <arg name="sensorOffsetY" default="0"/>
+  <arg name="vehicleHeight" default="0.3"/>
+
+  <arg name="vehicleX" default="0"/>
+  <arg name="vehicleY" default="0"/>
+  <arg name="vehicleZ" default="0"/>
+  <arg name="terrainZ" default="0"/>
+  <arg name="vehicleYaw" default="0"/>
+
+  <arg name="terrainVoxelSize" default="0.05"/>
+  <arg name="groundHeightThre" default="0.1"/>
+  <arg name="adjustZ" default="true"/>
+  <arg name="terrainRadiusZ" default="1.0"/>
+  <arg name="minTerrainPointNumZ" default="5"/>
+  <arg name="smoothRateZ" default="0.5"/>
+  <arg name="adjustIncl" default="true"/>
+  <arg name="terrainRadiusIncl" default="2.0"/>
+  <arg name="minTerrainPointNumIncl" default="200"/>
+  <arg name="smoothRateIncl" default="0.5"/>
+  <arg name="InclFittingThre" default="0.2"/>
+  <arg name="maxIncl" default="30.0"/>
+  <arg name="wheelbase" default="0.6"/>
+
+  <arg name="odom_topic" value="viscar/odom" />
+
+  <include file="$(find terrain_analysis)/launch/terrain_analysis.launch" />
+
+  <node pkg="vehicle_simulator" type="vehicleSimulator" name="vehicleSimulator" output="screen" required="true">
+    <param name="sensorOffsetX" value="$(arg sensorOffsetX)" />
+    <param name="sensorOffsetY" value="$(arg sensorOffsetY)" />
+    <param name="vehicleHeight" value="$(arg vehicleHeight)" />
+    <param name="vehicleX" value="$(arg vehicleX)" />
+    <param name="vehicleY" value="$(arg vehicleY)" />
+    <param name="vehicleZ" value="$(arg vehicleZ)" />
+    <param name="terrainZ" value="$(arg terrainZ)" />
+    <param name="vehicleYaw" value="$(arg vehicleYaw)" />
+    <param name="terrainVoxelSize" value="$(arg terrainVoxelSize)" />
+    <param name="groundHeightThre" value="$(arg groundHeightThre)" />
+    <param name="adjustZ" value="$(arg adjustZ)" />
+    <param name="terrainRadiusZ" value="$(arg terrainRadiusZ)" />
+    <param name="minTerrainPointNumZ" value="$(arg minTerrainPointNumZ)" />
+    <param name="smoothRateZ" value="$(arg smoothRateZ)" />
+    <param name="adjustIncl" value="$(arg adjustIncl)" />
+    <param name="terrainRadiusIncl" value="$(arg terrainRadiusIncl)" />
+    <param name="minTerrainPointNumIncl" value="$(arg minTerrainPointNumIncl)" />
+    <param name="smoothRateIncl" value="$(arg smoothRateIncl)" />
+    <param name="InclFittingThre" value="$(arg InclFittingThre)" />
+    <param name="maxIncl" value="$(arg maxIncl)" />
+    <param name="wheelbase" value="$(arg wheelbase)" />
+  </node>
+
+<node pkg="visualization_tools" type="visualizationTools" name="visualizationTools" output="screen">
+    <param name="metricFile" type="string" value="log/metrics" />
+    <param name="trajFile" type="string" value="log/trajectory" />
+    <param name="mapFile" type="string" value="/home/xulong/oge-planner-master/src/ugv_simulator/visualization_tools/src/pointcloud.ply" />
+    <param name="overallMapVoxelSize" type="double" value="0.5" />
+    <param name="exploredAreaVoxelSize" type="double" value="0.3" />
+    <param name="exploredVolumeVoxelSize" type="double" value="0.5" />
+    <param name="transInterval" type="double" value="0.2" />
+    <param name="yawInterval" type="double" value="10.0" />
+    <param name="overallMapDisplayInterval" type="int" value="2" />
+    <param name="exploredAreaDisplayInterval" type="int" value="1" />
+  </node>
+
+  <node pkg="laser_simulator" type="laser_sim_node" name="laser_simulator" output="screen">
+    <param name="sensing_horizon" value="10.0" />
+    <param name="sensing_rate" value="10.0"/>
+    <param name="pc_resolution" value="0.05"/>
+    <param name="use_resolution_filter" value="false"/>
+
+    <param name="hrz_laser_line_num" value="360"/>
+    <param name="vtc_laser_line_num" value="16"/>
+    <param name="vtc_laser_range_dgr" value="30.0"/>
+
+    <remap from="~global_map" to="/overall_map"/>
+    <remap from="~odom" to="$(arg odom_topic)"/>
+  </node>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find vehicle_simulator)/rviz/default.rviz" required="true" />
+
+</launch>

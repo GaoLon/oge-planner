@@ -777,7 +777,7 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
     return;
 
   // /* add fake obstales */
-  // latest_cloud.clear();
+  latest_cloud.clear();
   // Eigen::Vector3d mdcx = md_.camera_r_m_.col(0);
   // Eigen::Vector3d mdcy = md_.camera_r_m_.col(1);
   // Eigen::Vector3d rightOb = md_.camera_pos_ - mdcy*mp_.max_kappa_inv_;
