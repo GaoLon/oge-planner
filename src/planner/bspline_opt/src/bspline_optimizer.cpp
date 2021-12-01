@@ -33,6 +33,17 @@ namespace ego_planner
     this->moving_objs_ = mov_obj;
   }
 
+  void BsplineOptimizer::setEnvironment(const TratMap::Ptr &map)
+  {
+    this->trat_map_ = map;
+  }
+
+  void BsplineOptimizer::setEnvironment(const TratMap::Ptr &map, const fast_planner::ObjPredictor::Ptr mov_obj)
+  {
+    this->trat_map_ = map;
+    this->moving_objs_ = mov_obj;
+  }
+
   void BsplineOptimizer::setControlPoints(const Eigen::MatrixXd &points)
   {
     cps_.points = points;
@@ -58,7 +69,8 @@ namespace ego_planner
     int seg_upbound = std::min((int)segments.size(), static_cast<int>(floor(log(MAX_TRAJS) / log(VARIS))));
     std::vector<ControlPoints> control_pts_buf;
     control_pts_buf.reserve(MAX_TRAJS);
-    const double RESOLUTION = grid_map_->getResolution();
+    // const double RESOLUTION = grid_map_->getResolution();
+    const double RESOLUTION = trat_map_->getResolution();
     const double CTRL_PT_DIST = (cps_.points.col(0) - cps_.points.col(cps_.size - 1)).norm() / (cps_.size - 1);
 
     // Step 1. Find the opposite vectors and base points for every segment.
@@ -101,7 +113,8 @@ namespace ego_planner
           {
             Eigen::Vector3d pt(a * RichInfoSegs[i].first.points.col(j) + (1 - a) * RichInfoSegs[i].first.points.col(j + 1));
             //cout << " " << grid_map_->getInflateOccupancy(pt) << " pt=" << pt.transpose() << endl;
-            if (grid_map_->getInflateOccupancy(pt))
+            // if (grid_map_->getInflateOccupancy(pt))
+            if (trat_map_->getInflateOccupancy(pt))
             {
               occ_start_id = j;
               occ_start_pt = pt;
@@ -120,8 +133,8 @@ namespace ego_planner
           {
             Eigen::Vector3d pt(a * RichInfoSegs[i].first.points.col(j) + (1 - a) * RichInfoSegs[i].first.points.col(j - 1));
             //cout << " " << grid_map_->getInflateOccupancy(pt) << " pt=" << pt.transpose() << endl;
-            ;
-            if (grid_map_->getInflateOccupancy(pt))
+            // if (grid_map_->getInflateOccupancy(pt))
+            if (trat_map_->getInflateOccupancy(pt))
             {
               occ_end_id = j;
               occ_end_pt = pt;
@@ -201,7 +214,8 @@ namespace ego_planner
             base_pt_reverse = RichInfoSegs[i].first.points.col(j) + base_vec_reverse * (RichInfoSegs[i].first.base_point[j][0] - RichInfoSegs[i].first.points.col(j)).norm();
           }
 
-          if (grid_map_->getInflateOccupancy(base_pt_reverse)) // Search outward.
+          // if (grid_map_->getInflateOccupancy(base_pt_reverse)) // Search outward.
+          if (trat_map_->getInflateOccupancy(base_pt_reverse)) // Search outward.
           {
             double l_upbound = 5 * CTRL_PT_DIST; // "5" is the threshold.
             double l = RESOLUTION;
@@ -209,7 +223,8 @@ namespace ego_planner
             {
               Eigen::Vector3d base_pt_temp = base_pt_reverse + l * base_vec_reverse;
               //cout << base_pt_temp.transpose() << endl;
-              if (!grid_map_->getInflateOccupancy(base_pt_temp))
+              // if (!grid_map_->getInflateOccupancy(base_pt_temp))
+              if (!trat_map_->getInflateOccupancy(base_pt_temp))
               {
                 RichInfoSegs[i].second.base_point[j][0] = base_pt_temp;
                 RichInfoSegs[i].second.direction[j][0] = base_vec_reverse;
@@ -276,7 +291,8 @@ namespace ego_planner
         Eigen::Vector3d base_vec_reverse = -RichInfoSegs[i].first.direction[0][0];
         Eigen::Vector3d base_pt_reverse = RichInfoSegs[i].first.points.col(0) + base_vec_reverse * (RichInfoSegs[i].first.base_point[0][0] - RichInfoSegs[i].first.points.col(0)).norm();
 
-        if (grid_map_->getInflateOccupancy(base_pt_reverse)) // Search outward.
+        // if (grid_map_->getInflateOccupancy(base_pt_reverse)) // Search outward.
+        if (trat_map_->getInflateOccupancy(base_pt_reverse)) // Search outward.
         {
           double l_upbound = 5 * CTRL_PT_DIST; // "5" is the threshold.
           double l = RESOLUTION;
@@ -284,7 +300,8 @@ namespace ego_planner
           {
             Eigen::Vector3d base_pt_temp = base_pt_reverse + l * base_vec_reverse;
             //cout << base_pt_temp.transpose() << endl;
-            if (!grid_map_->getInflateOccupancy(base_pt_temp))
+            // if (!grid_map_->getInflateOccupancy(base_pt_temp))
+            if (!trat_map_->getInflateOccupancy(base_pt_temp))
             {
               RichInfoSegs[i].second.base_point[0][0] = base_pt_temp;
               RichInfoSegs[i].second.direction[0][0] = base_vec_reverse;
@@ -445,7 +462,8 @@ namespace ego_planner
 
     /*** Segment the initial trajectory according to obstacles ***/
     constexpr int ENOUGH_INTERVAL = 2;
-    double step_size = grid_map_->getResolution() / ((init_points.col(0) - init_points.rightCols(1)).norm() / (init_points.cols() - 1)) / 1.5;
+    // double step_size = grid_map_->getResolution() / ((init_points.col(0) - init_points.rightCols(1)).norm() / (init_points.cols() - 1)) / 1.5;
+    double step_size = trat_map_->getResolution() / ((init_points.col(0) - init_points.rightCols(1)).norm() / (init_points.cols() - 1)) / 1.5;
     int in_id = -1, out_id = -1;
     vector<std::pair<int, int>> segment_ids;
     int same_occ_state_times = ENOUGH_INTERVAL + 1;
@@ -457,7 +475,8 @@ namespace ego_planner
       //cout << " *" << i-1 << "*" ;
       for (double a = 1.0; a > 0.0; a -= step_size)
       {
-        occ = grid_map_->getInflateOccupancy(a * init_points.col(i - 1) + (1 - a) * init_points.col(i));
+        // occ = grid_map_->getInflateOccupancy(a * init_points.col(i - 1) + (1 - a) * init_points.col(i));
+        occ = trat_map_->getInflateOccupancy(a * init_points.col(i - 1) + (1 - a) * init_points.col(i));
         //cout << " " << occ;
         // cout << setprecision(5);
         // cout << (a * init_points.col(i-1) + (1-a) * init_points.col(i)).transpose() << " occ1=" << occ << endl;
@@ -653,14 +672,28 @@ namespace ego_planner
           if (length > 1e-5)
           {
             cps_.flag_temp[j] = true;
-            for (double a = length; a >= 0.0; a -= grid_map_->getResolution())
-            {
-              occ = grid_map_->getInflateOccupancy((a / length) * intersection_point + (1 - a / length) * init_points.col(j));
+            // for (double a = length; a >= 0.0; a -= grid_map_->getResolution())
+            // {
+            //   occ = grid_map_->getInflateOccupancy((a / length) * intersection_point + (1 - a / length) * init_points.col(j));
 
-              if (occ || a < grid_map_->getResolution())
+            //   if (occ || a < grid_map_->getResolution())
+            //   {
+            //     if (occ)
+            //       a += grid_map_->getResolution();
+            //     cps_.base_point[j].push_back((a / length) * intersection_point + (1 - a / length) * init_points.col(j));
+            //     cps_.direction[j].push_back((intersection_point - init_points.col(j)).normalized());
+            //     // cout << "A " << j << endl;
+            //     break;
+            //   }
+            // }
+            for (double a = length; a >= 0.0; a -= trat_map_->getResolution())
+            {
+              occ = trat_map_->getInflateOccupancy((a / length) * intersection_point + (1 - a / length) * init_points.col(j));
+
+              if (occ || a < trat_map_->getResolution())
               {
                 if (occ)
-                  a += grid_map_->getResolution();
+                  a += trat_map_->getResolution();
                 cps_.base_point[j].push_back((a / length) * intersection_point + (1 - a / length) * init_points.col(j));
                 cps_.direction[j].push_back((intersection_point - init_points.col(j)).normalized());
                 // cout << "A " << j << endl;
@@ -1247,7 +1280,8 @@ namespace ego_planner
     for (int i = order_ - 1; i <= i_end; ++i)
     {
 
-      bool occ = grid_map_->getInflateOccupancy(cps_.points.col(i));
+      // bool occ = grid_map_->getInflateOccupancy(cps_.points.col(i));
+      bool occ = trat_map_->getInflateOccupancy(cps_.points.col(i));
 
       /*** check if the new collision will be valid ***/
       if (occ)
@@ -1255,7 +1289,8 @@ namespace ego_planner
         for (size_t k = 0; k < cps_.direction[i].size(); ++k)
         {
           cout.precision(2);
-          if ((cps_.points.col(i) - cps_.base_point[i][k]).dot(cps_.direction[i][k]) < 1 * grid_map_->getResolution()) // current point is outside all the collision_points.
+          //if ((cps_.points.col(i) - cps_.base_point[i][k]).dot(cps_.direction[i][k]) < 1 * grid_map_->getResolution()) // current point is outside all the collision_points.
+          if ((cps_.points.col(i) - cps_.base_point[i][k]).dot(cps_.direction[i][k]) < 1 * trat_map_->getResolution()) // current point is outside all the collision_points.
           {
             occ = false; // Not really takes effect, just for better hunman understanding.
             break;
@@ -1270,7 +1305,8 @@ namespace ego_planner
         int j;
         for (j = i - 1; j >= 0; --j)
         {
-          occ = grid_map_->getInflateOccupancy(cps_.points.col(j));
+          // occ = grid_map_->getInflateOccupancy(cps_.points.col(j));
+          occ = trat_map_->getInflateOccupancy(cps_.points.col(j));
           if (!occ)
           {
             in_id = j;
@@ -1285,7 +1321,8 @@ namespace ego_planner
 
         for (j = i + 1; j < cps_.size; ++j)
         {
-          occ = grid_map_->getInflateOccupancy(cps_.points.col(j));
+          // occ = grid_map_->getInflateOccupancy(cps_.points.col(j));
+          occ = trat_map_->getInflateOccupancy(cps_.points.col(j));
 
           if (!occ)
           {
@@ -1382,14 +1419,27 @@ namespace ego_planner
             if (length > 1e-5)
             {
               cps_.flag_temp[j] = true;
-              for (double a = length; a >= 0.0; a -= grid_map_->getResolution())
-              {
-                bool occ = grid_map_->getInflateOccupancy((a / length) * intersection_point + (1 - a / length) * cps_.points.col(j));
+              // for (double a = length; a >= 0.0; a -= grid_map_->getResolution())
+              // {
+              //   bool occ = grid_map_->getInflateOccupancy((a / length) * intersection_point + (1 - a / length) * cps_.points.col(j));
 
-                if (occ || a < grid_map_->getResolution())
+              //   if (occ || a < grid_map_->getResolution())
+              //   {
+              //     if (occ)
+              //       a += grid_map_->getResolution();
+              //     cps_.base_point[j].push_back((a / length) * intersection_point + (1 - a / length) * cps_.points.col(j));
+              //     cps_.direction[j].push_back((intersection_point - cps_.points.col(j)).normalized());
+              //     break;
+              //   }
+              // }
+              for (double a = length; a >= 0.0; a -= trat_map_->getResolution())
+              {
+                bool occ = trat_map_->getInflateOccupancy((a / length) * intersection_point + (1 - a / length) * cps_.points.col(j));
+
+                if (occ || a < trat_map_->getResolution())
                 {
                   if (occ)
-                    a += grid_map_->getResolution();
+                    a += trat_map_->getResolution();
                   cps_.base_point[j].push_back((a / length) * intersection_point + (1 - a / length) * cps_.points.col(j));
                   cps_.direction[j].push_back((intersection_point - cps_.points.col(j)).normalized());
                   break;
@@ -1535,10 +1585,12 @@ namespace ego_planner
         UniformBspline traj = UniformBspline(cps_.points, 3, bspline_interval_);
         double tm, tmp;
         traj.getTimeSpan(tm, tmp);
-        double t_step = (tmp - tm) / ((traj.evaluateDeBoorT(tmp) - traj.evaluateDeBoorT(tm)).norm() / grid_map_->getResolution());
+        // double t_step = (tmp - tm) / ((traj.evaluateDeBoorT(tmp) - traj.evaluateDeBoorT(tm)).norm() / grid_map_->getResolution());
+        double t_step = (tmp - tm) / ((traj.evaluateDeBoorT(tmp) - traj.evaluateDeBoorT(tm)).norm() / trat_map_->getResolution());
         for (double t = tm; t < tmp * 2 / 3; t += t_step) // Only check the closest 2/3 partition of the whole trajectory.
         {
-          flag_occ = grid_map_->getInflateOccupancy(traj.evaluateDeBoorT(t));
+          // flag_occ = grid_map_->getInflateOccupancy(traj.evaluateDeBoorT(t));
+          flag_occ = trat_map_->getInflateOccupancy(traj.evaluateDeBoorT(t));
           if (flag_occ)
           {
             //cout << "hit_obs, t=" << t << " P=" << traj.evaluateDeBoorT(t).transpose() << endl;
@@ -1680,7 +1732,8 @@ namespace ego_planner
       double t_step = (tmp - tm) / ((traj.evaluateDeBoorT(tmp) - traj.evaluateDeBoorT(tm)).norm() / grid_map_->getResolution()); // Step size is defined as the maximum size that can passes throgth every gird.
       for (double t = tm; t < tmp * 2 / 3; t += t_step)
       {
-        if (grid_map_->getInflateOccupancy(traj.evaluateDeBoorT(t)))
+        // if (grid_map_->getInflateOccupancy(traj.evaluateDeBoorT(t)))
+        if (trat_map_->getInflateOccupancy(traj.evaluateDeBoorT(t)))
         {
           // cout << "Refined traj hit_obs, t=" << t << " P=" << traj.evaluateDeBoorT(t).transpose() << endl;
 

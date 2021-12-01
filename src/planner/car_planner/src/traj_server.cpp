@@ -119,8 +119,8 @@ void cmdCallback(const ros::TimerEvent &e)
     if (t_temp>=traj_duration_)
     {
       t_temp = traj_duration_;
-      ROS_ERROR("STOP SHITTING!!!");
-      ROS_INFO("vtemp = %f",traj_[1].evaluateDeBoorT(t_temp).norm()); 
+      // ROS_ERROR("STOP SHITTING!!!");
+      // ROS_INFO("vtemp = %f",traj_[1].evaluateDeBoorT(t_temp).norm()); 
     }
 
     double v_temp = traj_[1].evaluateDeBoorT(t_temp).norm();

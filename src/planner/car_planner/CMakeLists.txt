@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   cv_bridge
   plan_env
+  trat_map
   path_searching
   bspline_opt
   traj_utils
@@ -29,7 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include
  DEPENDS OpenCV Eigen Boost
- CATKIN_DEPENDS plan_env path_searching bspline_opt traj_utils
+ CATKIN_DEPENDS plan_env path_searching bspline_opt traj_utils trat_map
 )
 include_directories( 
     SYSTEM 

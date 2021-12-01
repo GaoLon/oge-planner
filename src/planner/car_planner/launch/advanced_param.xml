@@ -96,6 +96,39 @@
     <param name="grid_map/pose_type"     value="1"/>  
     <param name="grid_map/frame_id"      value="world"/>
 
+    <!-- trat_map parameters -->
+    <param name="trat_map/scanVoxelSize" type="double" value="0.05" />
+    <param name="trat_map/decayTime" type="double" value="2.0" />
+    <param name="trat_map/noDecayDis" type="double" value="8.0" />
+    <param name="trat_map/clearingDis" type="double" value="8.0" />
+    <param name="trat_map/useSorting" type="bool" value="false" />
+    <param name="trat_map/quantileZ" type="double" value="0.25" />
+    <param name="trat_map/considerDrop" type="bool" value="true" />
+    <param name="trat_map/limitGroundLift" type="bool" value="false" />
+    <param name="trat_map/maxGroundLift" type="double" value="0.15" />
+    <param name="trat_map/clearDyObs" type="bool" value="false" />
+    <param name="trat_map/minDyObsDis" type="double" value="0.3" />
+    <param name="trat_map/minDyObsAngle" type="double" value="0" />
+    <param name="trat_map/minDyObsRelZ" type="double" value="-0.5" />
+    <param name="trat_map/minDyObsVFOV" type="double" value="-16.0" />
+    <param name="trat_map/maxDyObsVFOV" type="double" value="16.0" />
+    <param name="trat_map/minDyObsPointNum" type="int" value="1" />
+    <param name="trat_map/noDataObstacle" type="bool" value="false" />
+    <param name="trat_map/noDataBlockSkipNum" type="int" value="0" />
+    <param name="trat_map/minBlockPointNum" type="int" value="20" />
+    <param name="trat_map/vehicleHeight" type="double" value="0.1" />
+    <param name="trat_map/voxelPointUpdateThre" type="int" value="100" />
+    <param name="trat_map/voxelTimeUpdateThre" type="double" value="2.0" />
+    <param name="trat_map/minRelZ" type="double" value="-1.0" />
+    <param name="trat_map/maxRelZ" type="double" value="0.5" />
+    <param name="trat_map/disRatioZ" type="double" value="0.2" />
+    <param name="trat_map/min_cnormal" type="double" value="0.866" />
+    <param name="trat_map/max_rho" type="double" value="0.1" />
+    <param name="trat_map/eta" type="double" value="0.3" />
+    <remap from="~trat_map/cloud" to="$(arg cloud_topic)"/>
+    <remap from="~trat_map/odom" to="$(arg odometry_topic)"/>
+    <!-- <remap from="~trat_map/occupancy_inflate" to="/terrain_map"/> -->
+
   <!-- planner manager -->
     <param name="manager/max_vel" value="$(arg max_vel)" type="double"/>
     <param name="manager/max_acc" value="$(arg max_acc)" type="double"/>

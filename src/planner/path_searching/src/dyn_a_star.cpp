@@ -33,6 +33,28 @@ void AStar::initGridMap(GridMap::Ptr occ_map, const Eigen::Vector3i pool_size)
     grid_map_ = occ_map;
 }
 
+void AStar::initGridMap(TratMap::Ptr occ_map, const Eigen::Vector3i pool_size)
+{
+    POOL_SIZE_ = pool_size;
+    CENTER_IDX_ = pool_size / 2;
+
+    GridNodeMap_ = new GridNodePtr **[POOL_SIZE_(0)];
+    for (int i = 0; i < POOL_SIZE_(0); i++)
+    {
+        GridNodeMap_[i] = new GridNodePtr *[POOL_SIZE_(1)];
+        for (int j = 0; j < POOL_SIZE_(1); j++)
+        {
+            GridNodeMap_[i][j] = new GridNodePtr[POOL_SIZE_(2)];
+            for (int k = 0; k < POOL_SIZE_(2); k++)
+            {
+                GridNodeMap_[i][j][k] = new GridNode;
+            }
+        }
+    }
+
+    trat_map_ = occ_map;
+}
+
 double AStar::getDiagHeu(GridNodePtr node1, GridNodePtr node2)
 {
     double dx = abs(node1->index(0) - node2->index(0));

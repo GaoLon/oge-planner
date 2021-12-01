@@ -246,7 +246,7 @@ int main(int argc, char **argv) {
   bool status = ros::ok();
   while (status) {
     ros::spinOnce();
-
+    ros::Time t0 = ros::Time::now(), t1;
     if (newlaserCloud) {
       newlaserCloud = false;
 
@@ -387,6 +387,7 @@ int main(int argc, char **argv) {
         }
       }
 
+    // ROS_INFO("true terrain cloud size=%d",(int)(terrainCloud->size()));
       // estimate ground and compute elevation for each point
       for (int i = 0; i < planarVoxelNum; i++) {
         planarVoxelElev[i] = 0;
@@ -652,6 +653,7 @@ int main(int argc, char **argv) {
 
     status = ros::ok();
     rate.sleep();
+    t1 = ros::Time::now();
   }
 
   return 0;

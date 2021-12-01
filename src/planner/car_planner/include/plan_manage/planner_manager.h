@@ -11,6 +11,7 @@
 #include <traj_utils/plan_container.hpp>
 #include <ros/ros.h>
 #include <traj_utils/planning_visualization.h>
+#include <trat_map/trat_map.h>
 
 namespace ego_planner
 {
@@ -51,6 +52,7 @@ namespace ego_planner
     LocalTrajData local_data_;
     GlobalTrajData global_data_;
     GridMap::Ptr grid_map_;
+    TratMap::Ptr trat_map_;
     fast_planner::ObjPredictor::Ptr obj_predictor_;    
     SwarmTrajData swarm_trajs_buf_;
     Eigen::Vector3d now_x, now_y;

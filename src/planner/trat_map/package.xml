@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>path_searching</name>
+  <name>trat_map</name>
   <version>0.0.0</version>
-  <description>The path_searching package</description>
+  <description>The trat_map package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="iszhouxin@zju.edu.cn">iszhouxin</maintainer>
+  <maintainer email="3180101177@zju.edu.cn">xulong</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/path_searching</url> -->
+  <!-- <url type="website">http://wiki.ros.org/trat_map</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -52,18 +52,13 @@
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
-  <build_depend>plan_env</build_depend>
-  <build_depend>trat_map</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
-  <build_export_depend>plan_env</build_export_depend>
-  <build_export_depend>trat_map</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-  <exec_depend>plan_env</exec_depend>
-  <exec_depend>trat_map</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

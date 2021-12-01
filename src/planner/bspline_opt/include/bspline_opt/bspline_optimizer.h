@@ -92,6 +92,8 @@ namespace ego_planner
     /* main API */
     void setEnvironment(const GridMap::Ptr &map);
     void setEnvironment(const GridMap::Ptr &map, const fast_planner::ObjPredictor::Ptr mov_obj);
+    void setEnvironment(const TratMap::Ptr &map);
+    void setEnvironment(const TratMap::Ptr &map, const fast_planner::ObjPredictor::Ptr mov_obj);
     void setParam(ros::NodeHandle &nh);
     Eigen::MatrixXd BsplineOptimizeTraj(const Eigen::MatrixXd &points, const double &ts,
                                         const int &cost_function, int max_num_id, int max_time_id);
@@ -128,6 +130,7 @@ namespace ego_planner
 
   private:
     GridMap::Ptr grid_map_;
+    TratMap::Ptr trat_map_;
     fast_planner::ObjPredictor::Ptr moving_objs_;
     SwarmTrajData *swarm_trajs_{NULL}; // Can not use shared_ptr and no need to free
     int drone_id_;

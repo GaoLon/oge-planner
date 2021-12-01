@@ -27,8 +27,10 @@ namespace ego_planner
     nh.param("manager/drone_id", pp_.drone_id, -1);
 
     local_data_.traj_id_ = 0;
-    grid_map_.reset(new GridMap);
-    grid_map_->initMap(nh);
+    // grid_map_.reset(new GridMap);
+    // grid_map_->initMap(nh);
+    trat_map_.reset(new TratMap);
+    trat_map_->initMap(nh);
 
     // obj_predictor_.reset(new fast_planner::ObjPredictor(nh));
     // obj_predictor_->init();
@@ -36,9 +38,11 @@ namespace ego_planner
 
     bspline_optimizer_.reset(new BsplineOptimizer);
     bspline_optimizer_->setParam(nh);
-    bspline_optimizer_->setEnvironment(grid_map_, obj_predictor_);
+    // bspline_optimizer_->setEnvironment(grid_map_, obj_predictor_);
+    bspline_optimizer_->setEnvironment(trat_map_, obj_predictor_);
     bspline_optimizer_->a_star_.reset(new AStar);
-    bspline_optimizer_->a_star_->initGridMap(grid_map_, Eigen::Vector3i(100, 100, 100));
+    // bspline_optimizer_->a_star_->initGridMap(grid_map_, Eigen::Vector3i(100, 100, 100));
+    bspline_optimizer_->a_star_->initGridMap(trat_map_, Eigen::Vector3i(100, 100, 100));
 
     visualization_ = vis;
   }
@@ -56,7 +60,7 @@ namespace ego_planner
     // cout.precision(3);
     // cout << "start: " << start_pt.transpose() << ", " << start_vel.transpose() << "\ngoal:" << local_target_pt.transpose() << ", " << local_target_vel.transpose()
     //      << endl;
-
+    local_target_pt[2] = start_pt[2];
     if ((start_pt - local_target_pt).norm() < 0.2)
     {
       cout << "Close to goal" << endl;
@@ -328,6 +332,7 @@ namespace ego_planner
           {
             point_set.push_back(ctrl_pts_temp.col(j));
           }
+          // ROS_ERROR("SHITTING POINTS IS %f,%f",point_set[0][2],point_set.back()[2]);
           vis_trajs.push_back(point_set);
         }
         else

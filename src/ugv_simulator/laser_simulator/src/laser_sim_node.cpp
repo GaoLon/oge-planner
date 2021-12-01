@@ -86,7 +86,7 @@ void rcvOdometryCallbck(const nav_msgs::Odometry &odom) {
     return;*/
   _has_odom = true;
   _odom = odom;
-  // _odom.pose.pose.position.z += 1;
+  _odom.pose.pose.position.z += 0.1;
 }
 
 pcl::PointCloud<pcl::PointXYZI> _cloud_all_map, _local_map;

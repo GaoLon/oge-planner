@@ -687,13 +687,15 @@ namespace ego_planner
   {
 
     LocalTrajData *info = &planner_manager_->local_data_;
-    auto map = planner_manager_->grid_map_;
+    // auto map = planner_manager_->grid_map_;
+    auto map = planner_manager_->trat_map_;
 
     if (exec_state_ == WAIT_TARGET || info->start_time_.toSec() < 1e-5)
       return;
 
     /* ---------- check lost of depth ---------- */
-    if (map->getOdomDepthTimeout())
+    // if (map->getOdomDepthTimeout())
+    if (1==2)
     {
       ROS_ERROR("Depth Lost! EMERGENCY_STOP");
       enable_fail_safe_ = false;

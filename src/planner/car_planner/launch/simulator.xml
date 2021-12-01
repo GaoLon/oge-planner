@@ -71,7 +71,7 @@
     <param name="use_resolution_filter" value="false"/>
 
     <param name="hrz_laser_line_num" value="360"/>
-    <param name="vtc_laser_line_num" value="16"/>
+    <param name="vtc_laser_line_num" value="32"/>
     <param name="vtc_laser_range_dgr" value="30.0"/>
 
     <remap from="~global_map" to="/overall_map"/>

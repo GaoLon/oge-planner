@@ -32,6 +32,7 @@
   <exec_depend>path_searching</exec_depend>
   <exec_depend>traj_utils</exec_depend>
   <depend>plan_env</depend>
+  <depend>trat_map</depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
