@@ -9,7 +9,7 @@
 #include <ros/ros.h>
 #include <math.h>
 
-ros::Publisher pos_cmd_pub;
+ros::Publisher pos_cmd_pub,a;
 
 // quadrotor_msgs::PositionCommand cmd;
 ackermann_msgs::AckermannDriveStamped cmd;
@@ -21,7 +21,7 @@ bool receive_traj_ = false;
 bool has_odom = false;
 vector<UniformBspline> traj_;
 double traj_duration_;
-ros::Time start_time_;
+ros::Time start_time_, true_start_time_;
 int traj_id_;
 
 // yaw control
@@ -81,7 +81,7 @@ void bsplineCallback(traj_utils::BsplineConstPtr msg)
 
   //UniformBspline yaw_traj(yaw_pts, msg->order, msg->yaw_dt);
 
-  start_time_ = msg->start_time;
+  start_time_ = true_start_time_ = msg->start_time;
   traj_id_ = msg->traj_id;
 
   traj_.clear();
@@ -109,11 +109,21 @@ void cmdCallback(const ros::TimerEvent &e)
 
   double dt = 0.1;
   double t_temp = t_cur;
-  if (t_cur < traj_duration_ && t_cur >= 0.0)
+  now_pos[2] = traj_[0].evaluateDeBoorT(traj_duration_)[2];
+  if (t_temp > traj_duration_ + (true_start_time_-start_time_).toSec()&&(now_pos-traj_[0].evaluateDeBoorT(traj_duration_)).norm()>lfc)
   {
+    t_temp = traj_duration_-dt;
+  }
+  if (t_temp < traj_duration_+ (true_start_time_-start_time_).toSec() && t_cur >= 0.0)
+  {
+    while(t_temp>dt&&(now_pos-traj_[0].evaluateDeBoorT(t_temp)).norm()>lfc)
+    {
+      t_temp -= dt;
+    }
     while(t_temp<traj_duration_&&(now_pos-traj_[0].evaluateDeBoorT(t_temp)).norm()<lfc)
     {
       t_temp += dt;
+      start_time_ = start_time_ - ros::Duration(dt);
     }
 
     if (t_temp>=traj_duration_)
@@ -201,6 +211,20 @@ void cmdCallback(const ros::TimerEvent &e)
   cmd.drive.steering_angle = max(-max_steer,min(max_steer, steer));
   pos_cmd_pub.publish(cmd);
 
+  // debug visualization
+  nav_msgs::Odometry sphere;
+  sphere.header.stamp = ros::Time::now();
+  sphere.header.frame_id = "world";
+  sphere.pose.pose.position.x = traj_[0].evaluateDeBoorT(t_temp)[0];
+  sphere.pose.pose.position.y = traj_[0].evaluateDeBoorT(t_temp)[1];
+  sphere.pose.pose.position.z = traj_[0].evaluateDeBoorT(t_temp)[2];
+  sphere.pose.pose.orientation.w = 1;
+  sphere.pose.pose.orientation.x = 0;
+  sphere.pose.pose.orientation.y = 0;
+  sphere.pose.pose.orientation.z = 0;
+
+  a.publish(sphere);
+
 }
 int main(int argc, char **argv)
 {
@@ -212,6 +236,7 @@ int main(int argc, char **argv)
   ros::Subscriber odom_sub_ = nh.subscribe( "odom", 1, rcvOdomCallBack );
 
   pos_cmd_pub = nh.advertise<ackermann_msgs::AckermannDriveStamped>("/position_cmd", 50);
+  a = nh.advertise<nav_msgs::Odometry>( "/track_point", 1 );
   // pos_cmd_pub = nh.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 50);]
 
   ros::Timer cmd_timer = nh.createTimer(ros::Duration(0.01), cmdCallback);

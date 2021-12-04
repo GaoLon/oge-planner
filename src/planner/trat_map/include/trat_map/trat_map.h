@@ -204,7 +204,7 @@ inline int TratMap::getInflateOccupancy(Eigen::Vector3d pos) {
   // return 0;
   Eigen::Vector2i id;
   posToIndex(po, id);
-  if (!isInMap(id)) return -1;
+  if (!isInMap(id)) return 0;
 
   // return int(md_.occupancy_buffer_inflate_[toAddress(id)]);
   if (md_.roughVoxelRho[mp_.planarVoxelWidth * id[0] + id[1]]>mp_.max_rho-1e-5)

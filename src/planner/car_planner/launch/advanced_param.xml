@@ -145,7 +145,7 @@
     <param name="optimization/lambda_collision" value="0.5" type="double"/>
     <param name="optimization/lambda_feasibility" value="0.1" type="double"/>
     <param name="optimization/lambda_fitness" value="1.0" type="double"/>
-    <param name="optimization/lambda_curvature" value="0.01" type="double"/>
+    <param name="optimization/lambda_curvature" value="0" type="double"/>
     <param name="optimization/dist0" value="0.5" type="double"/>
     <param name="optimization/swarm_clearance" value="0.5" type="double"/>
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double"/>

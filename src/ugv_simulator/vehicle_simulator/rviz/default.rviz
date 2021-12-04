@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Grid1
+        - /Odometry2
       Splitter Ratio: 0.5
     Tree Height: 1088
   - Class: rviz/Selection
@@ -26,7 +27,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: terrain_map
+    SyncSource: global_map
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -183,7 +184,7 @@ Visualization Manager:
       Marker Topic: /car_planner_node/optimal_list
       Name: optimized_path
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -214,6 +215,40 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: false
+      Keep: 1
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 25; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
+        Shaft Length: 1
+        Shaft Radius: 0.05000000074505806
+        Value: Axes
+      Topic: /track_point
+      Unreliable: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255

@@ -153,10 +153,10 @@ namespace ego_planner
             }
           }
           points.push_back(local_target_pt);
-          for (auto i:points)
-          {
-            cout<<i[0]<<" "<<i[1]<<" "<<i[2]<<endl;
-          }
+          // for (auto i:points)
+          // {
+          //   cout<<i[0]<<" "<<i[1]<<" "<<i[2]<<endl;
+          // }
           // Eigen::MatrixXd pos(3, 3);
           // pos.col(0) = start_pt;
           // pos.col(1) = random_inserted_pt;
@@ -368,7 +368,8 @@ namespace ego_planner
 
     /*** STEP 3: REFINE(RE-ALLOCATE TIME) IF NECESSARY ***/
     // Note: Only adjust time in single drone mode. But we still allow drone_0 to adjust its time profile.
-    if (pp_.drone_id <= 0)
+    // if (pp_.drone_id <= 0)
+    if (pp_.drone_id == 10)
     {
 
       double ratio;
