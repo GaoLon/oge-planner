@@ -26,7 +26,7 @@ int traj_id_;
 
 // yaw control
 double t_cur;
-bool back_flag = false;
+bool back_flag = false, end_flag = false;
 double time_forward_;
 double last_yaw_, last_yaw_dot_;
 double now_yaw, now_v;
@@ -90,6 +90,7 @@ void bsplineCallback(traj_utils::BsplineConstPtr msg)
 
   traj_duration_ = traj_[0].getTimeSum();
   receive_traj_ = true;
+  end_flag = false;
 }
 
 void cmdCallback(const ros::TimerEvent &e)
@@ -112,17 +113,26 @@ void cmdCallback(const ros::TimerEvent &e)
   now_pos[2] = traj_[0].evaluateDeBoorT(traj_duration_)[2];
   if (t_temp > traj_duration_ + (true_start_time_-start_time_).toSec()&&(now_pos-traj_[0].evaluateDeBoorT(traj_duration_)).norm()>lfc)
   {
-    t_temp = traj_duration_-dt;
+    // t_temp = traj_duration_-dt;
+    end_flag = true;
   }
-  if (t_temp < traj_duration_+ (true_start_time_-start_time_).toSec() && t_cur >= 0.0)
+  if (end_flag)
+  {
+    t_temp = traj_duration_;
+  }
+
+  if (t_temp < traj_duration_+ (true_start_time_-start_time_).toSec() || end_flag)
   {
     while(t_temp>dt&&(now_pos-traj_[0].evaluateDeBoorT(t_temp)).norm()>lfc)
     {
       t_temp -= dt;
+      if (!end_flag)
+      start_time_ = start_time_ + ros::Duration(dt);
     }
     while(t_temp<traj_duration_&&(now_pos-traj_[0].evaluateDeBoorT(t_temp)).norm()<lfc)
     {
       t_temp += dt;
+      if (!end_flag)
       start_time_ = start_time_ - ros::Duration(dt);
     }
 
@@ -140,6 +150,10 @@ void cmdCallback(const ros::TimerEvent &e)
     if (t_temp==traj_duration_)
     {
       v_temp = min(dir.norm()/time_forward_, v_max_);
+      if (v_temp<0.1)
+      {
+        end_flag = false;
+      }
     }
 
     if (yaw_temp - now_yaw > M_PI)
@@ -194,11 +208,13 @@ void cmdCallback(const ros::TimerEvent &e)
       }
     }
   }
-  else if (t_cur >= traj_duration_)
+  // else if (t_cur >= traj_duration_)
+  else if (t_temp >= traj_duration_+ (true_start_time_-start_time_).toSec())
   {
     /* hover when finish traj_ */
     steer = 0;
     speed = 0;
+    end_flag = false;
   }
   else
   {
