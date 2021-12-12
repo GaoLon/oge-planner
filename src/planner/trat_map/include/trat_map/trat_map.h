@@ -77,12 +77,14 @@ struct tMappingParameters{
 
     // rough voxel parameters
     float roughVoxelSize = 0.2;
+    float inv_roughVoxelSize = 1.0/roughVoxelSize;
     const int roughVoxelWidth = 51;
     int roughVoxelHalfWidth = (roughVoxelWidth - 1) / 2;
     const int roughVoxelNum = roughVoxelWidth * roughVoxelWidth;
     double min_cnormal = 0.0;
     double max_rho = 0.0;
     double eta = 0.0;
+    double rough_threshold = 0.0;
 };
 
 struct tMappingData{
@@ -146,6 +148,8 @@ public:
   void initMap(ros::NodeHandle& nh);
 
   void publishMapInflate(bool all_info = false);
+
+  void evaluateRhoWithGrad(const Eigen::Vector3d& pos, const Eigen::Vector3d& direction, double& rho, Eigen::Vector3d& grad);
 
   typedef std::shared_ptr<TratMap> Ptr;
 private:

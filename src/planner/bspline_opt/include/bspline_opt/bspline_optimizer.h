@@ -163,6 +163,7 @@ namespace ego_planner
     double lambda3_;               // feasibility weight
     double lambda4_;               // curve fitting
     double lambda5_;              // curvature weight
+    double lambda6_;              // roughness weight
 
     int a;
     //
@@ -197,6 +198,7 @@ namespace ego_planner
     void calcSwarmCost(const Eigen::MatrixXd &q, double &cost, Eigen::MatrixXd &gradient);
     void calcFitnessCost(const Eigen::MatrixXd &q, double &cost, Eigen::MatrixXd &gradient);
     void calcCurvatureCost(const Eigen::MatrixXd &q, double &cost, Eigen::MatrixXd &gradient);
+    void calcRoughnessCost(const Eigen::MatrixXd &q, double &cost, Eigen::MatrixXd &gradient);
     bool check_collision_and_rebound(void);
 
     static int earlyExit(void *func_data, const double *x, const double *g, const double fx, const double xnorm, const double gnorm, const double step, int n, int k, int ls);

@@ -12,6 +12,7 @@ namespace ego_planner
     nh.param("optimization/lambda_feasibility", lambda3_, -1.0);
     nh.param("optimization/lambda_fitness", lambda4_, -1.0);
     nh.param("optimization/lambda_curvature", lambda5_, -1.0);
+    nh.param("optimization/lambda_roughness", lambda6_, -1.0);
 
     nh.param("optimization/dist0", dist0_, -1.0);
     nh.param("optimization/swarm_clearance", swarm_clearance_, -1.0);
@@ -896,6 +897,28 @@ namespace ego_planner
     // cout << "---------------" << endl;
   }
 
+  void BsplineOptimizer::calcRoughnessCost(const Eigen::MatrixXd &q, double &cost, Eigen::MatrixXd &gradient)
+  {
+    for (int i = 3; i < q.cols() - 1; i++)
+    {
+      Eigen::Vector3d cur = q.col(i);
+      if (trat_map_->getInflateOccupancy(cur))
+      {
+        continue;
+      }
+      Eigen::Vector3d dif = q.col(i-1) - q.col(i+1);
+      Eigen::Vector3d direction(-dif(1),dif(0),0);
+      direction.normalize();
+      Eigen::Vector3d grad = Eigen::Vector3d::Zero();
+      double rho = 0;
+
+      trat_map_->evaluateRhoWithGrad(cur, direction, rho, grad);
+      gradient.col(i) += grad; 
+      cost += rho;
+    }
+  }
+
+
   void BsplineOptimizer::calcDistanceCostRebound(const Eigen::MatrixXd &q, double &cost,
                                                  Eigen::MatrixXd &gradient, int iter_num, double smoothness_cost)
   {
@@ -1771,12 +1794,13 @@ namespace ego_planner
     memcpy(cps_.points.data() + 3 * order_, x, n * sizeof(x[0]));
 
     /* ---------- evaluate cost and gradient ---------- */
-    double f_smoothness, f_distance, f_feasibility /*, f_mov_objs*/, f_swarm, f_terminal, f_curvature;
+    double f_smoothness, f_distance, f_feasibility /*, f_mov_objs*/, f_swarm, f_terminal, f_curvature, f_roughness;
 
     Eigen::MatrixXd g_smoothness = Eigen::MatrixXd::Zero(3, cps_.size);
     Eigen::MatrixXd g_distance = Eigen::MatrixXd::Zero(3, cps_.size);
     Eigen::MatrixXd g_feasibility = Eigen::MatrixXd::Zero(3, cps_.size);
     Eigen::MatrixXd g_curvature = Eigen::MatrixXd::Zero(3, cps_.size);
+    Eigen::MatrixXd g_roughness = Eigen::MatrixXd::Zero(3, cps_.size);
     // Eigen::MatrixXd g_mov_objs = Eigen::MatrixXd::Zero(3, cps_.size);
     Eigen::MatrixXd g_swarm = Eigen::MatrixXd::Zero(3, cps_.size);
     Eigen::MatrixXd g_terminal = Eigen::MatrixXd::Zero(3, cps_.size);
@@ -1785,15 +1809,18 @@ namespace ego_planner
     calcDistanceCostRebound(cps_.points, f_distance, g_distance, iter_num_, f_smoothness);
     calcFeasibilityCost(cps_.points, f_feasibility, g_feasibility);
     calcCurvatureCost(cps_.points, f_curvature, g_curvature);
+    calcRoughnessCost(cps_.points, f_roughness, g_roughness);
     // calcMovingObjCost(cps_.points, f_mov_objs, g_mov_objs);
     calcSwarmCost(cps_.points, f_swarm, g_swarm);
     calcTerminalCost(cps_.points, f_terminal, g_terminal);
 
-    f_combine = lambda1_ * f_smoothness + new_lambda2_ * f_distance + lambda3_ * f_feasibility + new_lambda2_ * f_swarm + lambda2_ * f_terminal + lambda5_ * f_curvature;
+    f_combine = lambda1_ * f_smoothness + new_lambda2_ * f_distance + lambda3_ * f_feasibility
+                               + new_lambda2_ * f_swarm + lambda2_ * f_terminal + lambda5_ * f_curvature + lambda6_ * f_roughness;
     //f_combine = lambda1_ * f_smoothness + new_lambda2_ * f_distance + lambda3_ * f_feasibility + new_lambda2_ * f_mov_objs;
     //printf("origin %f %f %f %f\n", f_smoothness, f_distance, f_feasibility, f_combine);
 
-    Eigen::MatrixXd grad_3D = lambda1_ * g_smoothness + new_lambda2_ * g_distance + lambda3_ * g_feasibility + new_lambda2_ * g_swarm + lambda2_ * g_terminal + lambda5_ * g_curvature;
+    Eigen::MatrixXd grad_3D = lambda1_ * g_smoothness + new_lambda2_ * g_distance + lambda3_ * g_feasibility
+                                                           + new_lambda2_ * g_swarm + lambda2_ * g_terminal + lambda5_ * g_curvature + lambda6_ * g_roughness;
     //Eigen::MatrixXd grad_3D = lambda1_ * g_smoothness + new_lambda2_ * g_distance + lambda3_ * g_feasibility + new_lambda2_ * g_mov_objs;
     memcpy(grad, grad_3D.data() + 3 * order_, n * sizeof(grad[0]));
   }

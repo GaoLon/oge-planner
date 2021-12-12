@@ -91,6 +91,14 @@ void bsplineCallback(traj_utils::BsplineConstPtr msg)
   traj_duration_ = traj_[0].getTimeSum();
   receive_traj_ = true;
   end_flag = false;
+
+  double t_temp = 0.0, dt=0.1;
+  while(t_temp<traj_duration_&&(now_pos-traj_[0].evaluateDeBoorT(t_temp)).norm()>0.1)
+  {
+    t_temp += dt;
+    start_time_ = start_time_ - ros::Duration(dt);
+  }
+  true_start_time_ = start_time_;
 }
 
 void cmdCallback(const ros::TimerEvent &e)
@@ -129,7 +137,7 @@ void cmdCallback(const ros::TimerEvent &e)
       if (!end_flag)
       start_time_ = start_time_ + ros::Duration(dt);
     }
-    while(t_temp<traj_duration_&&(now_pos-traj_[0].evaluateDeBoorT(t_temp)).norm()<lfc)
+    while(t_temp<traj_duration_&&(now_pos-traj_[0].evaluateDeBoorT(t_temp)).norm()<=lfc)
     {
       t_temp += dt;
       if (!end_flag)

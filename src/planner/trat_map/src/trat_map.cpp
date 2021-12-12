@@ -33,6 +33,7 @@ void TratMap::initMap(ros::NodeHandle &nh)
   node_.param("trat_map/min_cnormal", mp_.min_cnormal, 1.0);
   node_.param("trat_map/max_rho", mp_.max_rho, 1.0);
   node_.param("trat_map/eta", mp_.eta, 1.0);
+  node_.param("trat_map/rough_threshold", mp_.rough_threshold, 1.0);
   
   md_.laserCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
   md_.laserCloudCrop.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -55,8 +56,8 @@ void TratMap::initMap(ros::NodeHandle &nh)
   cloud_sub_ = node_.subscribe<sensor_msgs::PointCloud2>("trat_map/cloud", 5, &TratMap::cloudCallback, this);
   odom_sub_ = node_.subscribe<nav_msgs::Odometry>("trat_map/odom", 5, &TratMap::odomCallback, this);
 
-  pro_timer_ = node_.createTimer(ros::Duration(0.05), &TratMap::proCallback, this);
-  vis_timer_ = node_.createTimer(ros::Duration(0.11), &TratMap::visCallback, this);
+  // pro_timer_ = node_.createTimer(ros::Duration(0.05), &TratMap::proCallback, this);
+  // vis_timer_ = node_.createTimer(ros::Duration(0.11), &TratMap::visCallback, this);
 
   map_inf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("trat_map/occupancy_inflate", 2);
 }
@@ -593,4 +594,60 @@ void TratMap::proCallback(const ros::TimerEvent& /*event*/)
 void TratMap::visCallback(const ros::TimerEvent& /*event*/)
 {
     
+}
+
+void TratMap::evaluateRhoWithGrad(const Eigen::Vector3d& pos, const Eigen::Vector3d& direction, double& cost, Eigen::Vector3d& grad)
+{
+  double rho;
+  Eigen::Vector2d po(pos[0],pos[1]);
+  Eigen::Vector2i id;
+  posToIndex(po, id);
+  if (!isInMap(id))
+  {
+    cost = 0;
+    grad = Eigen::Vector3d::Zero();
+    return;
+  }else
+  {
+    rho = md_.roughVoxelRho[mp_.planarVoxelWidth * id[0] + id[1]];
+    if (rho<mp_.rough_threshold)
+    {
+      cost = 0;
+      grad = Eigen::Vector3d::Zero();
+      return;
+    }else
+    {
+      cost = rho - mp_.rough_threshold;
+    }
+  }
+
+  // try get gridient use simple idea
+  double rho_r=0, rho_l=0;
+  Eigen::Vector2i idr,idl;
+  Eigen::Vector2d por = po+direction.head(2)*mp_.roughVoxelSize;
+  Eigen::Vector2d pol = po-direction.head(2)*mp_.roughVoxelSize;
+
+  posToIndex(por,idr);
+  posToIndex(pol,idl);
+  if (isInMap(idr))
+  {
+    rho_r = md_.roughVoxelRho[mp_.planarVoxelWidth * idr[0] + idr[1]];
+  }
+  if (isInMap(idl))
+  {
+    rho_l = md_.roughVoxelRho[mp_.planarVoxelWidth * idl[0] + idl[1]];
+  }
+
+  double a = rho_r-rho;
+  double b = rho_l-rho;
+  if (a<=b && a<-mp_.max_rho*0.2)
+  {
+    grad = -direction;
+  }else if(b<a && b< -mp_.max_rho*0.2)
+  {
+    grad = direction;
+  }else
+  {
+    grad = Eigen::Vector3d::Zero();
+  }
 }
