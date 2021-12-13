@@ -621,33 +621,72 @@ void TratMap::evaluateRhoWithGrad(const Eigen::Vector3d& pos, const Eigen::Vecto
     }
   }
 
-  // try get gridient use simple idea
-  double rho_r=0, rho_l=0;
-  Eigen::Vector2i idr,idl;
-  Eigen::Vector2d por = po+direction.head(2)*mp_.roughVoxelSize;
-  Eigen::Vector2d pol = po-direction.head(2)*mp_.roughVoxelSize;
+  // try get gradient by biliear interruption
+  Eigen::Vector2d pos_m = po - 0.5 * mp_.roughVoxelSize * Eigen::Vector2d::Ones();
+  Eigen::Vector2i idx;
+  Eigen::Vector2d idx_pos;
+  Eigen::Vector2d diff;
+  double pts_rho[2][2];
 
-  posToIndex(por,idr);
-  posToIndex(pol,idl);
-  if (isInMap(idr))
+  posToIndex(pos_m, idx);
+  indexToPos(idx, idx_pos);
+  diff = (po-idx_pos)*mp_.inv_roughVoxelSize;
+  for (int x=0;x<2;x++)
   {
-    rho_r = md_.roughVoxelRho[mp_.planarVoxelWidth * idr[0] + idr[1]];
+    for (int y=0;y<2;y++)
+    {
+      Eigen::Vector2i cur = idx + Eigen::Vector2i(x,y);
+      if (isInMap(cur))
+      {
+        pts_rho[x][y] = md_.roughVoxelRho[mp_.planarVoxelWidth * cur[0] + cur[1]];
+      }else
+      {
+        pts_rho[x][y] = 0.0;
+      }
+    }
   }
-  if (isInMap(idl))
+  double v00 = (1-diff(0)) * pts_rho[0][0] + diff(0) * pts_rho[1][0];
+  double v10 = (1-diff(0)) * pts_rho[0][1] + diff(0) * pts_rho[1][1];
+  double v0  = (1-diff(1)) * v00 + diff(1) * v10;
+  if (v0<=mp_.rough_threshold)
   {
-    rho_l = md_.roughVoxelRho[mp_.planarVoxelWidth * idl[0] + idl[1]];
-  }
-
-  double a = rho_r-rho;
-  double b = rho_l-rho;
-  if (a<=b && a<-mp_.max_rho*0.2)
-  {
-    grad = -direction;
-  }else if(b<a && b< -mp_.max_rho*0.2)
-  {
-    grad = direction;
+    cost = 0;
+    grad = Eigen::Vector3d::Zero();
   }else
   {
-    grad = Eigen::Vector3d::Zero();
+    cost = v0 - mp_.rough_threshold;
+    grad[1] = (v10 - v00) * mp_.inv_roughVoxelSize;
+    grad[0] = ((1-diff(1)) * (pts_rho[1][0]-pts_rho[0][0]) + diff(1) * (pts_rho[1][1]-pts_rho[0][1])) * mp_.inv_roughVoxelSize;
+    grad[2] = 0;
   }
+
+  // // try get gradient by simple idea
+  // double rho_r=0, rho_l=0;
+  // Eigen::Vector2i idr,idl;
+  // Eigen::Vector2d por = po+direction.head(2)*mp_.roughVoxelSize;
+  // Eigen::Vector2d pol = po-direction.head(2)*mp_.roughVoxelSize;
+
+  // posToIndex(por,idr);
+  // posToIndex(pol,idl);
+  // if (isInMap(idr))
+  // {
+  //   rho_r = md_.roughVoxelRho[mp_.planarVoxelWidth * idr[0] + idr[1]];
+  // }
+  // if (isInMap(idl))
+  // {
+  //   rho_l = md_.roughVoxelRho[mp_.planarVoxelWidth * idl[0] + idl[1]];
+  // }
+
+  // double a = rho_r-rho;
+  // double b = rho_l-rho;
+  // if (a<=b && a<-mp_.max_rho*0.2)
+  // {
+  //   grad = -direction;
+  // }else if(b<a && b< -mp_.max_rho*0.2)
+  // {
+  //   grad = direction;
+  // }else
+  // {
+  //   grad = Eigen::Vector3d::Zero();
+  // }
 }
