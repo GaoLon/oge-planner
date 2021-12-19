@@ -241,7 +241,11 @@ namespace ego_planner
 
 		Eigen::Matrix3d R(odom_orient_);
     planner_manager_->now_x =R.col(0);
+    planner_manager_->now_x[2] = 0;
     planner_manager_->now_y =R.col(1);
+    planner_manager_->now_y[2] = 0;
+    planner_manager_->now_x.normalize();
+    planner_manager_->now_y.normalize();
     have_odom_ = true;
   }
 

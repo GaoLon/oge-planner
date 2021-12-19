@@ -1053,14 +1053,17 @@ namespace ego_planner
       delta_phi = acos(delta_now.dot(delta_next)*inv_norm_now*inv_norm_next);
       // delta_phi = fabs(atan(delta_next[1]/delta_next[0])-atan(delta_now[1]/delta_now[0]));
       double cost_c = delta_phi*inv_norm_now - max_kappa_;
-      if (cost_c>0)
+      if (cost_c>0 && delta_phi<M_PI_2)
       {
         ROS_WARN("SHITTING ANGLE IS %f, SHITTING NORM ARE %f, %f", delta_phi,norm_now,norm_next);
         cost+=pow(cost_c,2);
         double rd_cd = 1.0/sqrt(1-pow(cos(delta_phi),2))*inv_norm_now;
-        double norm_12 = q.col(i+1).norm()*q.col(i+2).norm();
-        Eigen::Vector3d p1 = (q.col(i+1) - q.col(i+1).dot(q.col(i+2))/q.col(i+2).squaredNorm()*q.col(i+2))/norm_12;
-        Eigen::Vector3d p2 = (-q.col(i+2) + q.col(i+1).dot(q.col(i+2))/q.col(i+1).squaredNorm()*q.col(i+1))/norm_12;
+        // double norm_12 = q.col(i+1).norm()*q.col(i+2).norm();
+        // Eigen::Vector3d p1 = (q.col(i+1) - q.col(i+1).dot(q.col(i+2))/q.col(i+2).squaredNorm()*q.col(i+2))/norm_12;
+        // Eigen::Vector3d p2 = (-q.col(i+2) + q.col(i+1).dot(q.col(i+2))/q.col(i+1).squaredNorm()*q.col(i+1))/norm_12;
+        double inv_norm_12 = inv_norm_next*inv_norm_now;
+        Eigen::Vector3d p1 = (delta_now-delta_now.dot(delta_next)*pow(inv_norm_next,2)*delta_next)*inv_norm_12;
+        Eigen::Vector3d p2 = (-delta_next+delta_now.dot(delta_next)*pow(inv_norm_now,2)*delta_now)*inv_norm_12;
         gradient.col(i) += 2*cost_c*(rd_cd*p2 + delta_phi*pow(inv_norm_now,2)*Eigen::Vector3d(1,1,0));
         gradient.col(i+1) += 2*cost_c*(-rd_cd*(p1+p2) - delta_phi*pow(inv_norm_now,2)*Eigen::Vector3d(1,1,0));
         gradient.col(i+2) += 2*cost_c*rd_cd*p1;

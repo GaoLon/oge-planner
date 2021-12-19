@@ -1,6 +1,7 @@
 <launch>
 
     <arg name="drone_id" value="0"/>
+    <arg name="use_sim" default="false" />
     <arg name="odom_topic" value="viscar/odom" />
     
     <!-- map -->
@@ -17,7 +18,9 @@
         <arg name="odometry_topic" value="$(arg odom_topic)"/>
         <arg name="camera_pose_topic" value="pcl_render_node/camera_pose"/>
         <arg name="depth_topic" value="pcl_render_node/depth"/>
-        <arg name="cloud_topic" value="laser_simulator/local_pointcloud"/>
+        <!-- <arg name="cloud_topic" value="laser_simulator/local_pointcloud"/> -->
+        <arg name="cloud_topic" value="/cloud_registered"/>
+
         <!-- intrinsic params of the depth camera -->
         <arg name="cx" value="321.04638671875"/>
         <arg name="cy" value="243.44969177246094"/>
@@ -29,6 +32,7 @@
         <!--always set to 1.5 times grater than sensing horizen-->
         <arg name="planning_horizon" value="7.5" />
         <arg name="use_distinctive_trajs" value="true" />
+        <!-- <arg name="use_distinctive_trajs" value="false" /> -->
         <!-- 1: use 2D Nav Goal to select goal  -->
         <!-- 2: use global waypoints below  -->
         <arg name="flight_type" value="1" />
@@ -54,11 +58,17 @@
     </node>
     
     <!-- use simulator -->
-    <include file="$(find car_planner)/launch/simulator.xml">
-        <arg name="odometry_topic" value="$(arg odom_topic)" />
-    </include>
+    <group if="$(arg use_sim)">
+        <include file="$(find car_planner)/launch/simulator.xml">
+            <arg name="odometry_topic" value="$(arg odom_topic)" />
+            <arg name="cloud_topic" value="cloud_registered"/>
+        </include>
+        <!-- rviz -->
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find vehicle_simulator)/rviz/default.rviz" required="true" />
+    </group>
 
-    <!-- rviz -->
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find vehicle_simulator)/rviz/default.rviz" required="true" />
+    <group unless="$(arg use_sim)">
+        <include file="$(find fast_lio)/launch/mapping_ouster64.launch"/>
+    </group>
 
 </launch>

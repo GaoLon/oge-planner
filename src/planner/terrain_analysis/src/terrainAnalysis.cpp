@@ -225,7 +225,7 @@ int main(int argc, char **argv) {
       nh.subscribe<nav_msgs::Odometry>("/viscar/odom", 5, odometryHandler);
 
   ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(
-      "/laser_simulator/local_pointcloud", 5, laserCloudHandler);
+      "/cloud_registered", 5, laserCloudHandler);
 
   ros::Subscriber subJoystick =
       nh.subscribe<sensor_msgs::Joy>("/joy", 5, joystickHandler);

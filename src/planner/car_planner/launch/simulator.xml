@@ -24,6 +24,7 @@
   <arg name="wheelbase" default="0.6"/>
 
   <arg name="odometry_topic"/>
+  <arg name="cloud_topic"/>
 
   <include file="$(find terrain_analysis)/launch/terrain_analysis.launch" />
 
@@ -76,6 +77,8 @@
 
     <remap from="~global_map" to="/overall_map"/>
     <remap from="~odom" to="$(arg odometry_topic)"/>
+    <remap from="~local_pointcloud" to="$(arg cloud_topic)"/>
+
   </node>
 
   <node pkg="car_planner" name="car_vis_node" type="car_vis_node" output="screen">

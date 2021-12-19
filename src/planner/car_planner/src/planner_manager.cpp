@@ -163,7 +163,36 @@ namespace ego_planner
           // pos.col(2) = local_target_pt;
           // Eigen::VectorXd t(2);
           // t(0) = t(1) = time / 2;``
+
+          // to time allocation ok
+          vector<Eigen::Vector3d> inter_points;
+          const double dist_thresh = 1.0;
+          for (size_t i = 0; i < points.size() - 1; ++i)
+          {
+            inter_points.push_back(points.at(i));
+            double dist = (points.at(i + 1) - points.at(i)).norm();
+
+            if (dist > dist_thresh)
+            {
+              int id_num = floor(dist / dist_thresh) + 1;
+
+              for (int j = 1; j < id_num; ++j)
+              {
+                Eigen::Vector3d inter_pt =
+                    points.at(i) * (1.0 - double(j) / id_num) + points.at(i + 1) * double(j) / id_num;
+                inter_points.push_back(inter_pt);
+              }
+            }
+          }
+          inter_points.push_back(points.back());
+          points.clear();
+          for (auto i:inter_points)
+          {
+            points.push_back(i);
+          }
+
           int pt_num = points.size();
+          // visualization_->displayInitPathList(points, 0.2, 0);
           Eigen::MatrixXd pos(3, pt_num);
           double real_d = 0.0;
           for (int i = 0; i < pt_num-1; ++i)
@@ -174,6 +203,7 @@ namespace ego_planner
           pos.col(pt_num-1) = points[pt_num-1];
           Eigen::Vector3d zero(0, 0, 0);
           Eigen::VectorXd t(pt_num - 1);
+          time = real_d/pp_.max_vel_*1.5;
           for (int i = 0; i < pt_num - 1; ++i)
           {
             t(i) = (pos.col(i + 1) - pos.col(i)).norm() / real_d * time;
@@ -582,7 +612,7 @@ namespace ego_planner
 
     // insert intermediate points if too far
     vector<Eigen::Vector3d> inter_points;
-    const double dist_thresh = 4.0;
+    const double dist_thresh = 2.0;
 
     for (size_t i = 0; i < points.size() - 1; ++i)
     {
@@ -617,7 +647,16 @@ namespace ego_planner
       time(i) = (pos.col(i + 1) - pos.col(i)).norm() / (pp_.max_vel_);
     }
 
-    time(0) *= 2.0;
+    double dpt_num=0.0;
+    double last_num = time(time.rows()-1)*pp_.max_vel_;
+    for (int i=0;i<pt_num-1;i++)
+    {
+      dpt_num += (pos.col(i + 1) - pos.col(i)).norm();
+      if (dpt_num<last_num)
+      {
+        time(i) *= 2.0;
+      }
+    }
     time(time.rows() - 1) *= 2.0;
 
     PolynomialTraj gl_traj;

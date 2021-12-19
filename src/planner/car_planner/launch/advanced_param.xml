@@ -81,8 +81,10 @@
     <param name="trat_map/voxelPointUpdateThre" type="int" value="100" />
     <param name="trat_map/voxelTimeUpdateThre" type="double" value="2.0" />
     <param name="trat_map/minRelZ" type="double" value="-1.0" />
-    <param name="trat_map/maxRelZ" type="double" value="0.5" />
-    <param name="trat_map/disRatioZ" type="double" value="0.2" />
+    <param name="trat_map/maxRelZ" type="double" value="0.1" />
+    <!-- <param name="trat_map/maxRelZ" type="double" value="0.5" /> -->
+    <param name="trat_map/disRatioZ" type="double" value="0.1" />
+    <!-- <param name="trat_map/disRatioZ" type="double" value="0.2" /> -->
     <param name="trat_map/min_cnormal" type="double" value="0.866" />
     <param name="trat_map/max_rho" type="double" value="0.1" />
     <param name="trat_map/eta" type="double" value="0.3" />
@@ -107,8 +109,10 @@
     <param name="optimization/lambda_collision" value="0.5" type="double"/>
     <param name="optimization/lambda_feasibility" value="0.1" type="double"/>
     <param name="optimization/lambda_fitness" value="1.0" type="double"/>
-    <param name="optimization/lambda_curvature" value="0.01" type="double"/>
-    <param name="optimization/lambda_roughness" value="0.05" type="double"/>
+    <param name="optimization/lambda_curvature" value="0.1" type="double"/>
+    <!-- <param name="optimization/lambda_curvature" value="0.0" type="double"/> -->
+    <!-- <param name="optimization/lambda_roughness" value="0.05" type="double"/> -->
+    <param name="optimization/lambda_roughness" value="0.0" type="double"/>
     <param name="optimization/dist0" value="0.5" type="double"/>
     <param name="optimization/swarm_clearance" value="0.5" type="double"/>
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double"/>

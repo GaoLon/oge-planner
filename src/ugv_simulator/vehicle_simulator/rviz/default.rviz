@@ -104,7 +104,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.07999999821186066
       Style: Flat Squares
-      Topic: /laser_simulator/local_pointcloud
+      Topic: /cloud_registered
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
