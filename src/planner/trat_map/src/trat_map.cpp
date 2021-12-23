@@ -34,6 +34,7 @@ void TratMap::initMap(ros::NodeHandle &nh)
   node_.param("trat_map/max_rho", mp_.max_rho, 1.0);
   node_.param("trat_map/eta", mp_.eta, 1.0);
   node_.param("trat_map/rough_threshold", mp_.rough_threshold, 1.0);
+  node_.param("trat_map/inflate_occ_r", mp_.inflate_occ_r, 0.0);
   
   md_.laserCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
   md_.laserCloudCrop.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -46,7 +47,8 @@ void TratMap::initMap(ros::NodeHandle &nh)
     md_.terrainVoxelCloud[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
   }
     
-  for (auto i=0;i<2601;i++)
+  // for (auto i=0;i<2601;i++)
+  for (auto i=0;i<mp_.roughVoxelNum;i++)
   {
     md_.roughVoxelCloud[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
   }
@@ -286,7 +288,7 @@ void TratMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloud2)
     // md_.terrainCloud = mls_point.makeShared();
 
     // estimate ground and compute elevation for each point
-    for (int i = 0; i < mp_.planarVoxelNum; i++) {
+    for (int i = 0; i < mp_.roughVoxelNum; i++) {
       md_.roughVoxelCloud[i]->clear();
       // md_.roughVoxelRho[i] = 0;
     }
@@ -296,35 +298,26 @@ void TratMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloud2)
       point = md_.terrainCloud->points[i];
 
       int indX =
-          int((point.x - md_.vehicleX + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-          mp_.planarVoxelHalfWidth;
+          int((point.x - md_.vehicleX + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+          mp_.roughVoxelHalfWidth;
       int indY =
-          int((point.y - md_.vehicleY + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-          mp_.planarVoxelHalfWidth;
+          int((point.y - md_.vehicleY + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+          mp_.roughVoxelHalfWidth;
 
-      if (point.x - md_.vehicleX + mp_.planarVoxelSize / 2 < 0)
+      if (point.x - md_.vehicleX + mp_.roughVoxelSize / 2 < 0)
         indX--;
-      if (point.y - md_.vehicleY + mp_.planarVoxelSize / 2 < 0)
+      if (point.y - md_.vehicleY + mp_.roughVoxelSize / 2 < 0)
         indY--;
 
       if (point.z - md_.vehicleZ > mp_.minRelZ && point.z - md_.vehicleZ < mp_.maxRelZ) {
-        if (indX>= 0 && indX < mp_.planarVoxelWidth && indY >= 0 && indY < mp_.planarVoxelWidth) {
-          md_.roughVoxelCloud[mp_.planarVoxelWidth * indX + indY]->push_back(point);
+        if (indX>= 0 && indX < mp_.roughVoxelWidth && indY >= 0 && indY < mp_.roughVoxelWidth) {
+          md_.roughVoxelCloud[mp_.roughVoxelWidth * indX + indY]->push_back(point);
         }
-        // for (int dX = -1; dX <= 1; dX++) {
-        //   for (int dY = -1; dY <= 1; dY++) {
-        //     if (indX + dX >= 0 && indX + dX < mp_.planarVoxelWidth &&
-        //         indY + dY >= 0 && indY + dY < mp_.planarVoxelWidth) {
-        //       md_.planarPointElev[mp_.planarVoxelWidth * (indX + dX) + indY + dY]
-        //           .push_back(point.z);
-        //     }
-        //   }
-        // }
       }
 
       if (mp_.clearDyObs) {
-        if (indX >= 0 && indX < mp_.planarVoxelWidth && indY >= 0 &&
-            indY < mp_.planarVoxelWidth) {
+        if (indX >= 0 && indX < mp_.roughVoxelWidth && indY >= 0 &&
+            indY < mp_.roughVoxelWidth) {
           float pointX1 = point.x - md_.vehicleX;
           float pointY1 = point.y - md_.vehicleY;
           float pointZ1 = point.z - md_.vehicleZ;
@@ -354,118 +347,21 @@ void TratMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloud2)
               float dis4 = sqrt(pointX4 * pointX4 + pointY4 * pointY4);
               float angle4 = atan2(pointZ4, dis4) * 180.0 / M_PI;
               if (angle4 > mp_.minDyObsVFOV && angle4 < mp_.maxDyObsVFOV) {
-                md_.planarVoxelDyObs[mp_.planarVoxelWidth * indX + indY]++;
+                md_.planarVoxelDyObs[mp_.roughVoxelWidth * indX + indY]++;
               }
             }
           } else {
-            md_.planarVoxelDyObs[mp_.planarVoxelWidth * indX + indY] +=
+            md_.planarVoxelDyObs[mp_.roughVoxelWidth * indX + indY] +=
                 mp_.minDyObsPointNum;
           }
         }
       }
     }
 
-    // estimate normal and rho: algorithm one: 
+    // estimate normal and rho: algorithm: 
     md_.roughCloud->clear();
-    // for (auto i=0;i<mp_.planarVoxelNum;i++)
-    // {
-    //   pcl::PointCloud<pcl::PointXYZI>::Ptr roughVoxelCloudPtr = md_.roughVoxelCloud[i];
-    //   if (roughVoxelCloudPtr->size()<mp_.minBlockPointNum)
-    //   {
-    //     md_.roughVoxelRho[i] = 0;
-    //   }
-    //   else
-    //   {
-    //     double cnormal  = 0;
-    //     Eigen::Matrix<double,3,1> mean_p = Eigen::Vector3d::Zero();
-    //     Eigen::Matrix3d cov = Eigen::Matrix3d::Zero();
 
-    //     for (size_t j = 0; j <roughVoxelCloudPtr->size(); j++)
-    //     {
-    //       mean_p += Eigen::Matrix<double,3,1>((*roughVoxelCloudPtr)[j].x, (*roughVoxelCloudPtr)[j].y, (*roughVoxelCloudPtr)[j].z);
-    //     }
-    //     mean_p /= 3;
-
-    //     for (size_t j = 0; j <roughVoxelCloudPtr->size(); j++)
-    //     {
-    //       Eigen::Matrix<double, 3, 1> v = Eigen::Matrix<double, 3, 1>((*roughVoxelCloudPtr)[j].x,  
-    //         (*roughVoxelCloudPtr)[j].y, (*roughVoxelCloudPtr)[j].z) - mean_p;
-    //       cov += v * v.transpose();
-    //     }
-
-    //     /// opposite PCA
-    //     Eigen::EigenSolver<Eigen::Matrix3d> es(cov);
-    //     Eigen::Matrix<double, 3, 1> D = es.pseudoEigenvalueMatrix().diagonal();// eigenValue
-    //     Eigen::Matrix3d V = es.pseudoEigenvectors();    // eigenVector
-    //     Eigen::MatrixXd::Index evalsMax;
-    //     D.minCoeff(&evalsMax);
-    //     Eigen::Matrix<double, 3, 1> Z_t = V.col(evalsMax);
-    //     cnormal = fabs(Z_t.col(0)[2]);
-    //     if (cnormal<mp_.min_cnormal)
-    //     {
-    //       md_.roughVoxelRho[i] = mp_.max_rho + 0.05;
-    //     }else
-    //     {
-    //       // estimate planar
-    //       Eigen::Matrix<double,3,1> mean_p = Eigen::Vector3d::Zero();
-    //       Eigen::Matrix3d cov = Eigen::Matrix3d::Zero();
-    //       pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
-    //       for (int dX = -1; dX <= 1; dX++) {
-    //         for (int dY = -1; dY <= 1; dY++) {
-    //           int a = i + dX*mp_.planarVoxelWidth + dY;
-    //           if (a >= 0 && a < mp_.planarVoxelNum) {
-    //                 *(temp) += *(md_.roughVoxelCloud[a]);
-    //           }
-    //         }
-    //       }
-
-    //       for (size_t j = 0; j <temp->size(); j++)
-    //       {
-    //         mean_p += Eigen::Matrix<double,3,1>((*temp)[j].x, (*temp)[j].y, (*temp)[j].z);
-    //       }
-    //       mean_p /= 3;
-
-    //       for (size_t j = 0; j <temp->size(); j++)
-    //       {
-    //         Eigen::Matrix<double, 3, 1> v = Eigen::Matrix<double, 3, 1>((*temp)[j].x, 
-    //           (*temp)[j].y, (*temp)[j].z) - mean_p;
-    //         cov += v * v.transpose();
-    //       }
-
-    //       // opposite PCA
-    //       Eigen::EigenSolver<Eigen::Matrix3d> es(cov);
-    //       Eigen::Matrix<double, 3, 1> D = es.pseudoEigenvalueMatrix().diagonal();// eigenValue
-    //       Eigen::Matrix3d V = es.pseudoEigenvectors();    // eigenVector
-    //       Eigen::MatrixXd::Index evalsMax;
-    //       D.minCoeff(&evalsMax);
-    //       Eigen::Matrix<double, 3, 1> n = V.col(evalsMax);
-
-    //       // get rho
-    //       std::vector<double> nears;
-    //       for (size_t j = 0; j <roughVoxelCloudPtr->size(); j++)
-    //       {
-    //         Eigen::Matrix<double, 3, 1> pi = { (*roughVoxelCloudPtr)[j].x, 
-    //         (*roughVoxelCloudPtr)[j].y, (*roughVoxelCloudPtr)[j].z};
-    //         nears.push_back(n.transpose().dot(pi - mean_p));
-    //       }
-    //       sort(nears.begin(), nears.end());
-    //       size_t a = static_cast<double>(nears.size()*mp_.eta / 2.0);
-    //       double d_min = nears[a];
-    //       double d_max = nears[nears.size() - 1 - a];
-    //       double rho_res = fabs(d_max - d_min);
-    //       md_.roughVoxelRho[i] = rho_res>mp_.max_rho?mp_.max_rho:rho_res;
-    //     }
-    //   }
-
-    //   for (size_t j=0; j<roughVoxelCloudPtr->size(); j++)
-    //   {
-    //     (*roughVoxelCloudPtr)[j].intensity = md_.roughVoxelRho[i];
-    //     md_.roughCloud->push_back((*roughVoxelCloudPtr)[j]);
-    //   }
-    // }
-
-    // estimate normal and rho: algorithm two: 
-    for (auto i=0;i<mp_.planarVoxelNum;i++)
+    for (auto i=0;i<mp_.roughVoxelNum;i++)
     {
       pcl::PointCloud<pcl::PointXYZI>::Ptr roughVoxelCloudPtr = md_.roughVoxelCloud[i];
       
@@ -476,8 +372,8 @@ void TratMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloud2)
       pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
       for (int dX = -1; dX <= 1; dX++) {
         for (int dY = -1; dY <= 1; dY++) {
-          int a = i + dX*mp_.planarVoxelWidth + dY;
-          if (a >= 0 && a < mp_.planarVoxelNum) {
+          int a = i + dX*mp_.roughVoxelWidth + dY;
+          if (a >= 0 && a < mp_.roughVoxelNum) {
                 *(temp) += *(md_.roughVoxelCloud[a]);
           }
         }
@@ -550,20 +446,20 @@ void TratMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloud2)
       for (int i = 0; i < laserCloudCropSize; i++) {
         point = md_.laserCloudCrop->points[i];
 
-        int indX = int((point.x - md_.vehicleX + mp_.planarVoxelSize / 2) /
-                        mp_.planarVoxelSize) +
-                    mp_.planarVoxelHalfWidth;
-        int indY = int((point.y - md_.vehicleY + mp_.planarVoxelSize / 2) /
-                        mp_.planarVoxelSize) +
-                    mp_.planarVoxelHalfWidth;
+        int indX = int((point.x - md_.vehicleX + mp_.roughVoxelSize / 2) /
+                        mp_.roughVoxelSize) +
+                    mp_.roughVoxelHalfWidth;
+        int indY = int((point.y - md_.vehicleY + mp_.roughVoxelSize / 2) /
+                        mp_.roughVoxelSize) +
+                    mp_.roughVoxelHalfWidth;
 
-        if (point.x - md_.vehicleX + mp_.planarVoxelSize / 2 < 0)
+        if (point.x - md_.vehicleX + mp_.roughVoxelSize / 2 < 0)
           indX--;
-        if (point.y - md_.vehicleY + mp_.planarVoxelSize / 2 < 0)
+        if (point.y - md_.vehicleY + mp_.roughVoxelSize / 2 < 0)
           indY--;
 
-        if (indX >= 0 && indX < mp_.planarVoxelWidth && indY >= 0 &&
-            indY < mp_.planarVoxelWidth) {
+        if (indX >= 0 && indX < mp_.roughVoxelWidth && indY >= 0 &&
+            indY < mp_.roughVoxelWidth) {
           float pointX1 = point.x - md_.vehicleX;
           float pointY1 = point.y - md_.vehicleY;
           float pointZ1 = point.z - md_.vehicleZ;
@@ -571,7 +467,7 @@ void TratMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &laserCloud2)
           float dis1 = sqrt(pointX1 * pointX1 + pointY1 * pointY1);
           float angle1 = atan2(pointZ1 - mp_.minDyObsRelZ, dis1) * 180.0 / M_PI;
           if (angle1 > mp_.minDyObsAngle) {
-            md_.planarVoxelDyObs[mp_.planarVoxelWidth * indX + indY] = 0;
+            md_.planarVoxelDyObs[mp_.roughVoxelWidth * indX + indY] = 0;
           }
         }
       }
@@ -609,7 +505,7 @@ void TratMap::evaluateRhoWithGrad(const Eigen::Vector3d& pos, const Eigen::Vecto
     return;
   }else
   {
-    rho = md_.roughVoxelRho[mp_.planarVoxelWidth * id[0] + id[1]];
+    rho = md_.roughVoxelRho[mp_.roughVoxelWidth * id[0] + id[1]];
     if (rho<mp_.rough_threshold)
     {
       cost = 0;
@@ -638,7 +534,7 @@ void TratMap::evaluateRhoWithGrad(const Eigen::Vector3d& pos, const Eigen::Vecto
       Eigen::Vector2i cur = idx + Eigen::Vector2i(x,y);
       if (isInMap(cur))
       {
-        pts_rho[x][y] = md_.roughVoxelRho[mp_.planarVoxelWidth * cur[0] + cur[1]];
+        pts_rho[x][y] = md_.roughVoxelRho[mp_.roughVoxelWidth * cur[0] + cur[1]];
       }else
       {
         pts_rho[x][y] = 0.0;
@@ -654,10 +550,12 @@ void TratMap::evaluateRhoWithGrad(const Eigen::Vector3d& pos, const Eigen::Vecto
     grad = Eigen::Vector3d::Zero();
   }else
   {
-    cost = v0 - mp_.rough_threshold;
+    // cost = v0 - mp_.rough_threshold;
+    cost = pow(v0 - mp_.rough_threshold,3);
     grad[1] = (v10 - v00) * mp_.inv_roughVoxelSize;
     grad[0] = ((1-diff(1)) * (pts_rho[1][0]-pts_rho[0][0]) + diff(1) * (pts_rho[1][1]-pts_rho[0][1])) * mp_.inv_roughVoxelSize;
     grad[2] = 0;
+    grad = grad * 3*pow(v0-mp_.rough_threshold,2);
   }
 
   // // try get gradient by simple idea
@@ -670,11 +568,11 @@ void TratMap::evaluateRhoWithGrad(const Eigen::Vector3d& pos, const Eigen::Vecto
   // posToIndex(pol,idl);
   // if (isInMap(idr))
   // {
-  //   rho_r = md_.roughVoxelRho[mp_.planarVoxelWidth * idr[0] + idr[1]];
+  //   rho_r = md_.roughVoxelRho[mp_.roughVoxelWidth * idr[0] + idr[1]];
   // }
   // if (isInMap(idl))
   // {
-  //   rho_l = md_.roughVoxelRho[mp_.planarVoxelWidth * idl[0] + idl[1]];
+  //   rho_l = md_.roughVoxelRho[mp_.roughVoxelWidth * idl[0] + idl[1]];
   // }
 
   // double a = rho_r-rho;

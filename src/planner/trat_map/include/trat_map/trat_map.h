@@ -76,15 +76,18 @@ struct tMappingParameters{
     const int planarVoxelNum = planarVoxelWidth * planarVoxelWidth;
 
     // rough voxel parameters
-    float roughVoxelSize = 0.2;
+    float roughVoxelSize = 0.1;
+    // float roughVoxelSize = 0.2;
     float inv_roughVoxelSize = 1.0/roughVoxelSize;
-    const int roughVoxelWidth = 51;
+    const int roughVoxelWidth = 101;
+    // const int roughVoxelWidth = 51;
     int roughVoxelHalfWidth = (roughVoxelWidth - 1) / 2;
     const int roughVoxelNum = roughVoxelWidth * roughVoxelWidth;
     double min_cnormal = 0.0;
     double max_rho = 0.0;
     double eta = 0.0;
     double rough_threshold = 0.0;
+    double inflate_occ_r = 0.0;
 };
 
 struct tMappingData{
@@ -95,15 +98,17 @@ struct tMappingData{
     pcl::PointCloud<pcl::PointXYZI>::Ptr terrainCloudElev;
     pcl::PointCloud<pcl::PointXYZI>::Ptr roughCloud;
     pcl::PointCloud<pcl::PointXYZI>::Ptr terrainVoxelCloud[441];
-    pcl::PointCloud<pcl::PointXYZI>::Ptr roughVoxelCloud[2601];
+    pcl::PointCloud<pcl::PointXYZI>::Ptr roughVoxelCloud[10201];
+    // pcl::PointCloud<pcl::PointXYZI>::Ptr roughVoxelCloud[2601];
 
     int terrainVoxelUpdateNum[441] = {0};
     float terrainVoxelUpdateTime[441] = {0};
     float planarVoxelElev[2601] = {0};
     int planarVoxelEdge[2601] = {0};
     int planarVoxelDyObs[2601] = {0};
-    vector<float> planarPointElev[2601];
-    float roughVoxelRho[2601] = {0};
+    // float roughVoxelRho[2601] = {0};
+    float roughVoxelRho[10201] = {0};
+
 
     double laserCloudTime = 0;
     bool newlaserCloud = false;
@@ -141,7 +146,8 @@ public:
   inline int toAddress(int& x, int& y);
   inline bool isInMap(const Eigen::Vector2d& pos);
   inline bool isInMap(const Eigen::Vector2i& idx);
-  inline double getResolution() { return mp_.roughVoxelSize/2; }
+  // inline double getResolution() { return mp_.roughVoxelSize/2; }
+  inline double getResolution() { return mp_.roughVoxelSize; }
 
   inline int getInflateOccupancy(Eigen::Vector3d pos);
   
@@ -169,8 +175,8 @@ private:
 };
 
 inline int TratMap::toAddress(const Eigen::Vector2i& id) {
-  int a = mp_.planarVoxelWidth * id[0] + id[1];
-  if (a>=0&&a<mp_.planarVoxelNum)
+  int a = mp_.roughVoxelWidth * id[0] + id[1];
+  if (a>=0&&a<mp_.roughVoxelNum)
   {
     return a;
   }
@@ -182,18 +188,18 @@ inline int TratMap::toAddress(const Eigen::Vector2i& id) {
 
 inline int TratMap::toAddress(int& x, int& y) {
   int indX =
-      int((x - md_.vehicleX + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-      mp_.planarVoxelHalfWidth;
+      int((x - md_.vehicleX + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+      mp_.roughVoxelHalfWidth;
   int indY =
-      int((y - md_.vehicleY + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-      mp_.planarVoxelHalfWidth;
+      int((y - md_.vehicleY + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+      mp_.roughVoxelHalfWidth;
 
-  if (x - md_.vehicleX + mp_.planarVoxelSize / 2 < 0)
+  if (x - md_.vehicleX + mp_.roughVoxelSize / 2 < 0)
     indX--;
-  if (y - md_.vehicleY + mp_.planarVoxelSize / 2 < 0)
+  if (y - md_.vehicleY + mp_.roughVoxelSize / 2 < 0)
     indY--;
-  int a = mp_.planarVoxelWidth * indX + indY;
-  if (a>=0&&a<mp_.planarVoxelNum)
+  int a = mp_.roughVoxelWidth * indX + indY;
+  if (a>=0&&a<mp_.roughVoxelNum)
   {
     return a;
   }
@@ -205,35 +211,59 @@ inline int TratMap::toAddress(int& x, int& y) {
 
 inline int TratMap::getInflateOccupancy(Eigen::Vector3d pos) {
   Eigen::Vector2d po(pos[0],pos[1]);
-  // return 0;
   Eigen::Vector2i id;
-  posToIndex(po, id);
-  if (!isInMap(id)) return 0;
+  int infla = 0;
 
-  // return int(md_.occupancy_buffer_inflate_[toAddress(id)]);
-  if (md_.roughVoxelRho[mp_.planarVoxelWidth * id[0] + id[1]]>mp_.max_rho-1e-5)
+  for (int i=-1; i<2; i++)
   {
-    return 1;
-  }else
-  {
-    return 0;
+    for (int j=-1; j<2; j++)
+    {
+      Eigen::Vector2d poi = po + Eigen::Vector2d(i*mp_.inflate_occ_r, j*mp_.inflate_occ_r);
+      posToIndex(poi, id);
+      if (isInMap(id))
+      {
+        if (md_.roughVoxelRho[mp_.roughVoxelWidth * id[0] + id[1]]>mp_.max_rho-1e-5)
+        {
+          infla = 1;
+          break;
+        }
+      }
+    }
+    if (infla==1)
+    {
+      break;
+    }
   }
+  return infla;
+
+  // posToIndex(po, id);
+
+  // if (!isInMap(id)) return 0;
+
+  // // return int(md_.occupancy_buffer_inflate_[toAddress(id)]);
+  // if (md_.roughVoxelRho[mp_.planarVoxelWidth * id[0] + id[1]]>mp_.max_rho-1e-5)
+  // {
+  //   return 1;
+  // }else
+  // {
+  //   return 0;
+  // }
 }
 
 inline bool TratMap::isInMap(const Eigen::Vector2d& pos) {
   int indX =
-      int((pos(0) - md_.vehicleX + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-      mp_.planarVoxelHalfWidth;
+      int((pos(0) - md_.vehicleX + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+      mp_.roughVoxelHalfWidth;
   int indY =
-      int((pos(1) - md_.vehicleY + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-      mp_.planarVoxelHalfWidth;
+      int((pos(1) - md_.vehicleY + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+      mp_.roughVoxelHalfWidth;
 
-  if (pos(0) - md_.vehicleX + mp_.planarVoxelSize / 2 < 0)
+  if (pos(0) - md_.vehicleX + mp_.roughVoxelSize / 2 < 0)
     indX--;
-  if (pos(1) - md_.vehicleY + mp_.planarVoxelSize / 2 < 0)
+  if (pos(1) - md_.vehicleY + mp_.roughVoxelSize / 2 < 0)
     indY--;
-  int a = mp_.planarVoxelWidth * indX + indY;
-  if (a>=0&&a<mp_.planarVoxelNum)
+  int a = mp_.roughVoxelWidth * indX + indY;
+  if (a>=0&&a<mp_.roughVoxelNum)
   {
     return true;
   }
@@ -244,8 +274,8 @@ inline bool TratMap::isInMap(const Eigen::Vector2d& pos) {
 }
 
 inline bool TratMap::isInMap(const Eigen::Vector2i& idx) {
-  int a = mp_.planarVoxelWidth * idx[0] + idx[1];
-  if (a>=0&&a<mp_.planarVoxelNum)
+  int a = mp_.roughVoxelWidth * idx[0] + idx[1];
+  if (a>=0&&a<mp_.roughVoxelNum)
   {
     return true;
   }
@@ -257,21 +287,21 @@ inline bool TratMap::isInMap(const Eigen::Vector2i& idx) {
 
 inline void TratMap::posToIndex(const Eigen::Vector2d& pos, Eigen::Vector2i& id) {
   int indX =
-      int((pos(0) - md_.vehicleX + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-      mp_.planarVoxelHalfWidth;
+      int((pos(0) - md_.vehicleX + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+      mp_.roughVoxelHalfWidth;
   int indY =
-      int((pos(1) - md_.vehicleY + mp_.planarVoxelSize / 2) / mp_.planarVoxelSize) +
-      mp_.planarVoxelHalfWidth;
+      int((pos(1) - md_.vehicleY + mp_.roughVoxelSize / 2) / mp_.roughVoxelSize) +
+      mp_.roughVoxelHalfWidth;
 
-  if (pos(0) - md_.vehicleX + mp_.planarVoxelSize / 2 < 0)
+  if (pos(0) - md_.vehicleX + mp_.roughVoxelSize / 2 < 0)
     indX--;
-  if (pos(1) - md_.vehicleY + mp_.planarVoxelSize / 2 < 0)
+  if (pos(1) - md_.vehicleY + mp_.roughVoxelSize / 2 < 0)
     indY--;
   id[0] = indX;
   id[1] = indY;
 }
 
 inline void TratMap::indexToPos(const Eigen::Vector2i& id, Eigen::Vector2d& pos) {
-  pos(0) = (id[0] - mp_.planarVoxelHalfWidth)*mp_.planarVoxelSize + md_.vehicleX;
-  pos(1) = (id[1] - mp_.planarVoxelHalfWidth)*mp_.planarVoxelSize + md_.vehicleY;
+  pos(0) = (id[0] - mp_.roughVoxelHalfWidth)*mp_.roughVoxelSize + md_.vehicleX;
+  pos(1) = (id[1] - mp_.roughVoxelHalfWidth)*mp_.roughVoxelSize + md_.vehicleY;
 }
