@@ -1,7 +1,3 @@
-# OGE-Planer
-
-**O**bject ru**G**gedness **E**stimating planner
-
 ## NOTE:
 
 if you want to use the code, follow the steps:
